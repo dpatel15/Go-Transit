@@ -12,6 +12,9 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    // Use the zod-resolved URL (with its dev default) rather than relying on
+    // process.env, which Prisma would otherwise read directly.
+    datasources: { db: { url: env.DATABASE_URL } },
     log: env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 

@@ -24,7 +24,14 @@ export function createGenerationStore(prisma: PrismaClient) {
 
     markSucceeded(
       id: string,
-      patch: { outputKey: string; width: number; height: number; costUsd: number; model?: string | null },
+      patch: {
+        outputKey: string;
+        sourceKey?: string;
+        width: number;
+        height: number;
+        costUsd: number;
+        model?: string | null;
+      },
     ) {
       return prisma.generation.update({
         where: { id },
