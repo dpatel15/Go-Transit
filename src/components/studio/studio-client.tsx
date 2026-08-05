@@ -144,16 +144,16 @@ export function StudioClient({
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl text-ink">Create a post</h1>
+          <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Create a post</h1>
           <p className="mt-1 text-sm text-muted">Upload a card photo, choose a look, and generate.</p>
         </div>
-        <span className="rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-sm text-gold-dark">
+        <span className="rounded-full border border-maroon/25 bg-maroon/[0.06] px-4 py-1.5 text-sm text-maroon">
           {credits} credit{credits === 1 ? "" : "s"} left this month
         </span>
       </div>
 
       {previewMode && (
-        <div className="rounded-xl border border-gold/30 bg-cream/60 px-4 py-3 text-sm text-ink/80">
+        <div className="rounded-xl border border-ink/10 bg-cream px-4 py-3 text-sm text-ink/80">
           <strong className="font-medium">Preview mode.</strong> You&rsquo;re seeing free mock composites. Add a
           Gemini API key (see the README) to switch on photoreal output — your $10 spend cap stays enforced.
         </div>
@@ -165,7 +165,7 @@ export function StudioClient({
           <div>
             <span className="label">1 · Card photo</span>
             <label
-              className="mt-2 flex aspect-[4/3] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-ink/25 bg-white/60 text-center transition hover:border-gold"
+              className="mt-2 flex aspect-[4/3] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-ink/25 bg-cream text-center transition-colors hover:border-maroon/40"
               htmlFor="card-input"
             >
               {previewUrl ? (
@@ -272,7 +272,7 @@ export function StudioClient({
                 </div>
               ))}
               {references.length < 3 && (
-                <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-ink/25 bg-white/60 text-lg text-muted transition hover:border-gold">
+                <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-ink/25 bg-cream text-lg text-muted transition-colors hover:border-maroon/40">
                   +
                   <input
                     type="file"
@@ -321,14 +321,14 @@ export function StudioClient({
         {/* Result */}
         <div className="card-surface flex flex-col p-6">
           <span className="label">Result</span>
-          <div className="mt-2 flex flex-1 items-center justify-center rounded-xl bg-gradient-to-br from-cream to-sand/50 p-4">
+          <div className="mt-2 flex flex-1 items-center justify-center rounded-xl border border-ink/10 bg-cream p-4">
             {working ? (
               <div className="animate-pulse text-sm text-muted">Styling the scene…</div>
             ) : result ? (
               <img
                 src={result.outputUrl}
                 alt="Generated premium card photo"
-                className="max-h-[520px] w-auto rounded-lg shadow-premium"
+                className="max-h-[520px] w-auto max-w-full rounded-lg border border-ink/10"
               />
             ) : (
               <div className="max-w-xs text-center text-sm text-muted">
@@ -346,7 +346,7 @@ export function StudioClient({
                 <span>· seed {result.seed}</span>
               </div>
               <div className="flex flex-wrap gap-3">
-                <a href={result.downloadUrl} className="btn-gold flex-1 text-center">
+                <a href={result.downloadUrl} className="btn-primary flex-1 text-center">
                   Download
                 </a>
                 <button type="button" className="btn-outline flex-1" disabled={working} onClick={() => generate(true)}>
@@ -360,13 +360,13 @@ export function StudioClient({
 
       {gallery.length > 0 && (
         <div>
-          <h2 className="font-display text-2xl text-ink">Your recent posts</h2>
+          <h2 className="font-display text-2xl font-semibold text-ink">Your recent posts</h2>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {gallery.map((g) => (
               <a
                 key={g.id}
                 href={g.download}
-                className="group relative overflow-hidden rounded-xl border border-ink/10 bg-white/60"
+                className="group relative overflow-hidden rounded-xl border border-ink/10 bg-cream"
                 title="Download"
               >
                 <img

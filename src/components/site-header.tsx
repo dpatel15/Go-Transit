@@ -6,10 +6,10 @@ import { Wordmark } from "./brand";
 export async function SiteHeader() {
   const session = await getCurrentSession();
   return (
-    <header className="border-b border-ink/10 bg-ivory/70 backdrop-blur">
-      <div className="container-page flex h-16 items-center justify-between">
+    <header className="sticky top-0 z-20 border-b border-ink/10 bg-ivory">
+      <div className="container-page flex h-16 items-center justify-between gap-3">
         <Wordmark />
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="flex items-center gap-3 text-sm sm:gap-4">
           {session ? (
             <>
               <Link href="/studio" className="text-ink/80 transition hover:text-ink">
