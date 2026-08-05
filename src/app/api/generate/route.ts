@@ -100,12 +100,10 @@ export async function POST(req: Request) {
         // Quota messages are safe, user-facing text (spend cap / out of credits).
         return NextResponse.json({ error: err.message, code: err.code }, { status: 402 });
       }
-      // Provider/internal detail is logged server-side, never returned verbatim.
+      // The provider yields safe, key-redacted messages; surface a trimmed
+      // version so setup issues (billing/quota/model/storage) are diagnosable.
       console.error("generation pipeline error:", err.code, err.message);
-      return NextResponse.json(
-        { error: "Generation failed. Please try again in a moment.", code: err.code },
-        { status: 502 },
-      );
+      return NextResponse.json({ error: err.message.slice(0, 300), code: err.code }, { status: 502 });
     }
     console.error("generation failed:", err);
     return NextResponse.json({ error: "Generation failed unexpectedly. Please try again." }, { status: 500 });

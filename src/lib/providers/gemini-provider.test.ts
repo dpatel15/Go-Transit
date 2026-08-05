@@ -90,9 +90,22 @@ describe("GeminiProvider", () => {
       });
       throw new Error("should have thrown");
     } catch (e) {
-      expect((e as Error).message).not.toContain("SUPER_SECRET");
-      expect((e as Error).message).toContain("***");
+      const message = (e as Error).message;
+      // The safe hint carries the status but never the key or raw upstream body.
+      expect(message).not.toContain("SUPER_SECRET");
+      expect(message).not.toContain("invalid key");
+      expect(message).toContain("400");
     }
+  });
+
+  it("gives an actionable hint for a 429 quota error", async () => {
+    const fetchImpl = (async () =>
+      fakeResponse({ error: "quota exceeded" }, false, 429)) as unknown as typeof fetch;
+    const provider = new GeminiProvider({ apiKey: "k", fetchImpl });
+    const card = await jpegCard();
+    await expect(
+      provider.generate({ image: { data: card, mimeType: "image/jpeg" }, prompt: "x", target: { width: 100, height: 100 } }),
+    ).rejects.toThrow(/429|billing|quota/i);
   });
 
   it("throws when the response has no image part", async () => {
