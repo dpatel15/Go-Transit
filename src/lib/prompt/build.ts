@@ -87,11 +87,21 @@ export function buildPrompt(input: PromptInput): PromptResult {
     .filter(Boolean)
     .join(", and ");
 
+  const referenceCount = Math.max(0, Math.floor(input.referenceCount ?? 0));
+  const referenceLine =
+    referenceCount > 0
+      ? `STYLE REFERENCE: Alongside the product, ${
+          referenceCount === 1 ? "a separate reference image is" : `${referenceCount} separate reference images are`
+        } provided purely as visual inspiration. Echo their overall mood, colour palette, lighting and staging around the product — but do NOT copy their subject, product, people, text or logos. Only the item from the first (product) image may appear in the final photograph, and it must still be preserved exactly.`
+      : null;
+
   const lines: (string | null)[] = [
     `You are an award-winning product photographer and retoucher creating a single luxury, editorial photograph of an Indian wedding invitation card (a "kankotri"). The provided image is the hero product.`,
     ``,
     `PRESERVE THE PRODUCT EXACTLY (highest priority): Keep the card's printed text, script and language, artwork, motifs, colours, foil or embossing, layout and proportions 100% unchanged. Do NOT redraw, re-typeset, translate, correct, add, remove, reposition or hallucinate any text or ornament on the card. Treat the card as a fixed, real physical object you are photographing — only build the surrounding scene.`,
     ``,
+    referenceLine,
+    referenceLine ? `` : null,
     `SCENE: ${template.setup} The card rests on ${surface}. Style the setting with ${stylingBits}. Let subtle ${motif} appear only in the surrounding décor, never on the card itself.`,
     ``,
     `PALETTE: Harmonise the scene around a ${region.paletteName} palette, chosen to complement — never clash with or overpower — the card's own colours.`,

@@ -61,6 +61,7 @@ export function StudioClient({
   const [result, setResult] = useState<GenResult | null>(null);
   const [credits, setCredits] = useState(remainingCredits);
   const [gallery, setGallery] = useState<GalleryItem[]>(initialGallery);
+  const [references, setReferences] = useState<Array<{ file: File; url: string }>>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onPickFile = (f: File | null) => {
@@ -72,6 +73,19 @@ export function StudioClient({
     setResult(null);
     setError(null);
     setSeed(null);
+  };
+
+  const addReference = (f: File | null) => {
+    if (!f) return;
+    setReferences((prev) => (prev.length >= 3 ? prev : [...prev, { file: f, url: URL.createObjectURL(f) }]));
+  };
+
+  const removeReference = (idx: number) => {
+    setReferences((prev) => {
+      const target = prev[idx];
+      if (target) URL.revokeObjectURL(target.url);
+      return prev.filter((_, i) => i !== idx);
+    });
   };
 
   const generate = useCallback(
@@ -88,6 +102,7 @@ export function StudioClient({
       fd.set("mood", mood);
       fd.set("aspectRatio", aspectRatio);
       if (notes.trim()) fd.set("notes", notes.trim());
+      references.forEach((r) => fd.append("reference", r.file));
       const useSeed = newLook ? Math.floor(Math.random() * 1_000_000_000) : seed;
       if (useSeed !== null && useSeed !== undefined) fd.set("seed", String(useSeed));
 
@@ -118,7 +133,7 @@ export function StudioClient({
         setWorking(false);
       }
     },
-    [file, region, mood, aspectRatio, notes, seed],
+    [file, region, mood, aspectRatio, notes, seed, references],
   );
 
   const regionInfo = getRegion(region);
@@ -234,6 +249,43 @@ export function StudioClient({
               ))}
             </div>
             <p className="mt-1 text-xs text-muted">{aspectInfo.use}</p>
+          </div>
+
+          <div>
+            <span className="label">Style references (optional)</span>
+            <p className="mt-1 text-xs text-muted">
+              Add up to 3 photos whose look you want — a background, a mood, a shoot you like. We match the vibe
+              and keep your product exact. Use images you have the rights to.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {references.map((r, i) => (
+                <div key={i} className="relative h-16 w-16 overflow-hidden rounded-lg border border-ink/15">
+                  <img src={r.url} alt={`Reference ${i + 1}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeReference(i)}
+                    aria-label="Remove reference"
+                    className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink/70 text-xs leading-none text-ivory"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {references.length < 3 && (
+                <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-ink/25 bg-white/60 text-lg text-muted transition hover:border-gold">
+                  +
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={(e) => {
+                      addReference(e.target.files?.[0] ?? null);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              )}
+            </div>
           </div>
 
           <div>

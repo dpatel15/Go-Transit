@@ -94,16 +94,22 @@ export class GeminiProvider implements ImageProvider {
       ? `${params.prompt}\n\nAvoid the following: ${params.negativePrompt}.`
       : params.prompt;
 
+    const parts: Array<Record<string, unknown>> = [
+      { text: promptText },
+      { inlineData: { mimeType: params.image.mimeType, data: params.image.data.toString("base64") } },
+    ];
+    const references = params.references ?? [];
+    if (references.length > 0) {
+      parts.push({
+        text: "The following image(s) are STYLE REFERENCE only — echo their mood, palette and lighting, but never copy their subject, text or logos:",
+      });
+      for (const ref of references) {
+        parts.push({ inlineData: { mimeType: ref.mimeType, data: ref.data.toString("base64") } });
+      }
+    }
+
     const body = {
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: promptText },
-            { inlineData: { mimeType: params.image.mimeType, data: params.image.data.toString("base64") } },
-          ],
-        },
-      ],
+      contents: [{ role: "user", parts }],
       generationConfig: {
         responseModalities: ["IMAGE"],
         ...(params.seed !== undefined ? { seed: params.seed } : {}),

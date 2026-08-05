@@ -70,6 +70,8 @@ export interface PromptInput {
   seed?: string | number;
   /** Optional free-text stylistic hint from the user (sanitised before use). */
   notes?: string;
+  /** How many style-reference images the user attached (0 = none). */
+  referenceCount?: number;
 }
 
 export interface PromptResult {

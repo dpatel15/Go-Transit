@@ -12,6 +12,8 @@ export interface SourceImage {
 
 export interface GenerateImageParams {
   image: SourceImage;
+  /** Optional style/scene inspiration images (their content is never copied). */
+  references?: SourceImage[];
   prompt: string;
   negativePrompt?: string;
   /** Exact output dimensions (Instagram size for the chosen aspect ratio). */

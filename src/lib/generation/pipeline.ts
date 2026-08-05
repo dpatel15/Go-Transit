@@ -27,6 +27,8 @@ export interface GenerateRequest {
   orgId: string;
   userId: string;
   image: ValidatedImage;
+  /** Optional style-reference images (their content is never reproduced). */
+  references?: ValidatedImage[];
   region: RegionId;
   mood: MoodId;
   aspectRatio: AspectRatioId;
@@ -98,6 +100,7 @@ export function createGenerationPipeline(deps: GenerationPipelineDeps) {
       aspectRatio: req.aspectRatio,
       seed: req.seed,
       notes: req.notes,
+      referenceCount: req.references?.length ?? 0,
     });
 
     // (3) Commit a pending row carrying the estimated cost.
@@ -137,6 +140,7 @@ export function createGenerationPipeline(deps: GenerationPipelineDeps) {
 
       const result = await deps.provider.generate({
         image: { data: req.image.data, mimeType: req.image.mimeType },
+        references: req.references?.map((r) => ({ data: r.data, mimeType: r.mimeType })),
         prompt: prompt.prompt,
         negativePrompt: prompt.negativePrompt,
         target: { width: prompt.target.width, height: prompt.target.height },

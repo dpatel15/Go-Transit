@@ -77,6 +77,22 @@ describe("buildPrompt", () => {
     expect(r.prompt).not.toContain("CLIENT STYLE NOTE");
   });
 
+  it("adds a subordinate style-reference section only when references are attached", () => {
+    const withRefs = buildPrompt({
+      region: "gujarati",
+      mood: "elegant",
+      aspectRatio: "1:1",
+      seed: 1,
+      referenceCount: 2,
+    });
+    expect(withRefs.prompt).toContain("STYLE REFERENCE");
+    expect(withRefs.prompt).toContain("2 separate reference images");
+    expect(withRefs.prompt).toContain("do NOT copy their subject");
+
+    const withoutRefs = buildPrompt({ region: "gujarati", mood: "elegant", aspectRatio: "1:1", seed: 1 });
+    expect(withoutRefs.prompt).not.toContain("STYLE REFERENCE");
+  });
+
   it("throws on unknown ids", () => {
     // @ts-expect-error invalid region on purpose
     expect(() => buildPrompt({ region: "atlantis", mood: "elegant", aspectRatio: "1:1" })).toThrow();
