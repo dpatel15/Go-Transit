@@ -157,6 +157,10 @@ for the full write-up. In brief:
 
 ## Deploying to production
 
+> **Fastest path: [Deploy to Railway](./docs/DEPLOY-RAILWAY.md)** — a click-by-click
+> guide that works with the app as-is (persistent disk for the database and
+> images). The general/portable notes below apply to any host.
+
 1. **Database → Postgres.** In `prisma/schema.prisma`, change the datasource
    `provider` to `"postgresql"`, set `DATABASE_URL` to your Postgres connection
    string, and run `npx prisma migrate deploy`. (The schema avoids DB-specific
