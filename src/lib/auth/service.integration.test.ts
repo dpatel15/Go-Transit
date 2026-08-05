@@ -129,7 +129,7 @@ describe("multi-tenant isolation", () => {
 });
 
 describe("org accounting", () => {
-  it("tracks credits and consumes them", async () => {
+  it("reserves and refunds credits atomically", async () => {
     const res = await auth.signup({ email: "credits@example.com", password: "kankotri2026" });
     const accounting = createOrgAccounting(prisma);
 
@@ -138,8 +138,29 @@ describe("org accounting", () => {
       usedThisMonth: 0,
     });
 
-    await accounting.consumeCredit(res.org.id);
+    const kind = await accounting.reserveCredit(res.org.id);
+    expect(kind).toBe("free");
     expect((await accounting.getCreditState(res.org.id)).usedThisMonth).toBe(1);
+
+    await accounting.refundCredit(res.org.id, "free");
+    expect((await accounting.getCreditState(res.org.id)).usedThisMonth).toBe(0);
+  });
+
+  it("never reserves more credits than exist", async () => {
+    const res = await auth.signup({ email: "contention@example.com", password: "kankotri2026" });
+    await prisma.organization.update({
+      where: { id: res.org.id },
+      data: { includedMonthlyCredits: 3, creditsUsedThisMonth: 0, purchasedCredits: 0 },
+    });
+    const accounting = createOrgAccounting(prisma);
+
+    // The conditional update guards atomicity; once exhausted, reservations fail.
+    const kinds: Array<string | null> = [];
+    for (let i = 0; i < 5; i++) kinds.push(await accounting.reserveCredit(res.org.id));
+
+    expect(kinds.filter((k) => k !== null)).toHaveLength(3);
+    expect(kinds.slice(3)).toEqual([null, null]);
+    expect((await accounting.getCreditState(res.org.id)).usedThisMonth).toBe(3);
   });
 
   it("computes global spend from succeeded generations only", async () => {

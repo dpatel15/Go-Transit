@@ -1,11 +1,6 @@
-import { env } from "@/lib/env";
-
 export const runtime = "nodejs";
 
+// Minimal, unauthenticated liveness probe — deliberately leaks no configuration.
 export async function GET() {
-  return Response.json({
-    ok: true,
-    imageProvider: env.IMAGE_PROVIDER,
-    spendLimitUsd: env.SPEND_LIMIT_USD,
-  });
+  return Response.json({ ok: true });
 }

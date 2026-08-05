@@ -40,9 +40,10 @@ export function createGenerationStore(prisma: PrismaClient) {
     },
 
     markFailed(id: string, error: string) {
+      // Zeroing costUsd releases the in-flight spend estimate this row reserved.
       return prisma.generation.update({
         where: { id },
-        data: { status: "failed", error: error.slice(0, 500) },
+        data: { status: "failed", error: error.slice(0, 500), costUsd: 0 },
       });
     },
   };
@@ -67,11 +68,15 @@ export function createOrgAccounting(prisma: PrismaClient) {
   return {
     rolloverIfNeeded,
 
-    /** Global spend across ALL tenants (the app runs on one API key + one cap). */
+    /**
+     * Global spend across ALL tenants (the app runs on one API key + one cap).
+     * Counts BOTH in-flight (pending) and succeeded rows, so concurrent paid
+     * generations see each other's reserved estimate and can't overshoot the cap.
+     */
     async getSpendState(limitUsd: number) {
       const agg = await prisma.generation.aggregate({
         _sum: { costUsd: true },
-        where: { status: "succeeded" },
+        where: { status: { in: ["pending", "succeeded"] } },
       });
       return { totalSpentUsd: agg._sum.costUsd ?? 0, limitUsd };
     },
@@ -85,27 +90,43 @@ export function createOrgAccounting(prisma: PrismaClient) {
       };
     },
 
-    /** Consume one credit atomically (free first, then purchased). */
-    async consumeCredit(orgId: string): Promise<void> {
-      await prisma.$transaction(async (tx) => {
-        const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId } });
-        const freeRemaining = Math.max(0, org.includedMonthlyCredits - org.creditsUsedThisMonth);
-        if (freeRemaining > 0) {
-          await tx.organization.update({
-            where: { id: orgId },
-            data: { creditsUsedThisMonth: { increment: 1 } },
-          });
-        } else if (org.purchasedCredits > 0) {
-          await tx.organization.update({
-            where: { id: orgId },
-            data: { purchasedCredits: { decrement: 1 } },
-          });
-        } else {
-          throw new Error("No credits available to consume.");
-        }
+    /**
+     * Atomically reserve one credit (free first, then purchased) using a guarded
+     * conditional update — so N concurrent requests can never consume more than
+     * the available credits. Returns which pool was used, or null if none left.
+     */
+    async reserveCredit(orgId: string): Promise<CreditReservation> {
+      const org = await prisma.organization.findUniqueOrThrow({ where: { id: orgId } });
+      const free = await prisma.organization.updateMany({
+        where: { id: orgId, creditsUsedThisMonth: { lt: org.includedMonthlyCredits } },
+        data: { creditsUsedThisMonth: { increment: 1 } },
       });
+      if (free.count === 1) return "free";
+      const purchased = await prisma.organization.updateMany({
+        where: { id: orgId, purchasedCredits: { gt: 0 } },
+        data: { purchasedCredits: { decrement: 1 } },
+      });
+      if (purchased.count === 1) return "purchased";
+      return null;
+    },
+
+    /** Release a previously reserved credit (on failure or over-cap). */
+    async refundCredit(orgId: string, kind: "free" | "purchased"): Promise<void> {
+      if (kind === "free") {
+        await prisma.organization.updateMany({
+          where: { id: orgId, creditsUsedThisMonth: { gt: 0 } },
+          data: { creditsUsedThisMonth: { decrement: 1 } },
+        });
+      } else {
+        await prisma.organization.update({
+          where: { id: orgId },
+          data: { purchasedCredits: { increment: 1 } },
+        });
+      }
     },
   };
 }
+
+export type CreditReservation = "free" | "purchased" | null;
 
 export type OrgAccounting = ReturnType<typeof createOrgAccounting>;

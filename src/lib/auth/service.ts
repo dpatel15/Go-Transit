@@ -134,6 +134,10 @@ export function createAuthService(prisma: PrismaClient, options: AuthServiceOpti
   }
 
   async function login(input: LoginInput): Promise<AuthResult> {
+    // Bound work before hashing so an over-long password can't burn CPU.
+    if (input.password.length > 200) {
+      throw new AuthError("INVALID_CREDENTIALS", "Incorrect email or password.");
+    }
     const email = normalizeEmail(input.email);
     const user = await prisma.user.findUnique({ where: { email }, include: { org: true } });
     // Always verify against *some* hash to avoid leaking which emails exist.

@@ -15,6 +15,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Please sign in to generate." }, { status: 401 });
   }
 
+  // Defense-in-depth CSRF: reject cross-origin POSTs (cookie is SameSite=Lax too).
+  const origin = req.headers.get("origin");
+  if (origin) {
+    let sameOrigin = false;
+    try {
+      sameOrigin = new URL(origin).host === req.headers.get("host");
+    } catch {
+      sameOrigin = false;
+    }
+    if (!sameOrigin) {
+      return NextResponse.json({ error: "Cross-origin request blocked." }, { status: 403 });
+    }
+  }
+
   const ip = await getClientIp();
   if (!generateRateLimiter.check(`generate:${session.user.id}:${ip}`).allowed) {
     return NextResponse.json({ error: "You're generating too quickly — give it a moment." }, { status: 429 });
@@ -82,8 +96,16 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     if (err instanceof PipelineError) {
-      const status = err.code === "QUOTA" ? 402 : 502;
-      return NextResponse.json({ error: err.message, code: err.code }, { status });
+      if (err.code === "QUOTA") {
+        // Quota messages are safe, user-facing text (spend cap / out of credits).
+        return NextResponse.json({ error: err.message, code: err.code }, { status: 402 });
+      }
+      // Provider/internal detail is logged server-side, never returned verbatim.
+      console.error("generation pipeline error:", err.code, err.message);
+      return NextResponse.json(
+        { error: "Generation failed. Please try again in a moment.", code: err.code },
+        { status: 502 },
+      );
     }
     console.error("generation failed:", err);
     return NextResponse.json({ error: "Generation failed unexpectedly. Please try again." }, { status: 500 });

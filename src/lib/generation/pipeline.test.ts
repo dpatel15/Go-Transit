@@ -52,7 +52,6 @@ describe("generation pipeline", () => {
   it("runs the full happy path with the mock engine (free)", async () => {
     const { org, user } = await makeOrgUser("happy");
     const pipeline = createGenerationPipeline({
-      prisma,
       provider: new MockProvider(),
       storage,
       store: createGenerationStore(prisma),
@@ -94,7 +93,6 @@ describe("generation pipeline", () => {
       data: { includedMonthlyCredits: 1, creditsUsedThisMonth: 1 },
     });
     const pipeline = createGenerationPipeline({
-      prisma,
       provider: new MockProvider(),
       storage,
       store: createGenerationStore(prisma),
@@ -126,7 +124,6 @@ describe("generation pipeline", () => {
       },
     };
     const pipeline = createGenerationPipeline({
-      prisma,
       provider: failing,
       storage,
       store: createGenerationStore(prisma),
@@ -151,5 +148,53 @@ describe("generation pipeline", () => {
     // no credit consumed, no spend
     const orgAfter = await prisma.organization.findUniqueOrThrow({ where: { id: org.id } });
     expect(orgAfter.creditsUsedThisMonth).toBe(0);
+  });
+
+  it("rejects a paid generation that would exceed the global spend cap", async () => {
+    const { org, user } = await makeOrgUser("overspend");
+    // Push global spend to just under the $10 cap with a succeeded row.
+    await prisma.generation.create({
+      data: {
+        orgId: org.id,
+        userId: user.id,
+        status: "succeeded",
+        provider: "gemini",
+        regionId: "gujarati",
+        moodId: "elegant",
+        aspectRatio: "4:5",
+        seed: 1,
+        costUsd: 9.99,
+      },
+    });
+    const paidProvider: ImageProvider = {
+      name: "gemini",
+      costPerImageUsd: 0.039,
+      generate: async () => {
+        throw new Error("provider should not be called once the cap is hit");
+      },
+    };
+    const pipeline = createGenerationPipeline({
+      provider: paidProvider,
+      storage,
+      store: createGenerationStore(prisma),
+      accounting: createOrgAccounting(prisma),
+      spendLimitUsd: 10,
+    });
+
+    await expect(
+      pipeline.generate({
+        orgId: org.id,
+        userId: user.id,
+        image: await validatedImage(),
+        region: "gujarati",
+        mood: "elegant",
+        aspectRatio: "1:1",
+      }),
+    ).rejects.toMatchObject({ code: "QUOTA" });
+
+    // No credit consumed and no leftover pending row.
+    const orgAfter = await prisma.organization.findUniqueOrThrow({ where: { id: org.id } });
+    expect(orgAfter.creditsUsedThisMonth).toBe(0);
+    expect(await prisma.generation.count({ where: { orgId: org.id, status: "pending" } })).toBe(0);
   });
 });

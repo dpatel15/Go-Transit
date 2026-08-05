@@ -10,18 +10,27 @@ export interface AuthFormState {
   error?: string;
 }
 
-async function rateLimited(scope: string): Promise<boolean> {
+/**
+ * Throttle by BOTH client IP and the submitted account, so brute-forcing one
+ * account is slowed even if the (spoofable) forwarded IP is rotated.
+ */
+async function rateLimited(scope: string, identifier: string): Promise<boolean> {
   const ip = await getClientIp();
-  return !authRateLimiter.check(`${scope}:${ip}`).allowed;
+  const byIp = !authRateLimiter.check(`${scope}:ip:${ip}`).allowed;
+  const byId = identifier
+    ? !authRateLimiter.check(`${scope}:id:${identifier.toLowerCase()}`).allowed
+    : false;
+  return byIp || byId;
 }
 
 export async function signupAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
-  if (await rateLimited("signup")) {
-    return { error: "Too many attempts. Please wait a minute and try again." };
-  }
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const orgName = String(formData.get("orgName") ?? "").trim();
+
+  if (await rateLimited("signup", email)) {
+    return { error: "Too many attempts. Please wait a minute and try again." };
+  }
 
   try {
     const res = await authService.signup({ email, password, orgName: orgName || undefined });
@@ -35,11 +44,12 @@ export async function signupAction(_prev: AuthFormState, formData: FormData): Pr
 }
 
 export async function loginAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
-  if (await rateLimited("login")) {
-    return { error: "Too many attempts. Please wait a minute and try again." };
-  }
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+
+  if (await rateLimited("login", email)) {
+    return { error: "Too many attempts. Please wait a minute and try again." };
+  }
 
   try {
     const res = await authService.login({ email, password });

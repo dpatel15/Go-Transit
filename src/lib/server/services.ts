@@ -33,7 +33,6 @@ export function getImageProvider() {
 
 export function getPipeline() {
   return createGenerationPipeline({
-    prisma,
     provider: getImageProvider(),
     storage,
     store: generationStore,
