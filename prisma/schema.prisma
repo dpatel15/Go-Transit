@@ -1,0 +1,88 @@
+// Kankotri Studio data model.
+//
+// Dev/test uses SQLite (zero infrastructure). To go to production on Postgres,
+// change `provider` below to "postgresql" and set DATABASE_URL accordingly —
+// the models avoid DB-specific features (no native enums; String status/role)
+// so the switch is essentially one line + a migration.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A tenant. Every user, generation and credit balance belongs to one org.
+model Organization {
+  id                     String   @id @default(cuid())
+  name                   String
+  slug                   String   @unique
+  plan                   String   @default("free")
+  includedMonthlyCredits Int      @default(30)
+  creditsUsedThisMonth   Int      @default(0)
+  purchasedCredits       Int      @default(0)
+  creditsPeriodStart     DateTime @default(now())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  users       User[]
+  generations Generation[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  orgId        String
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         String   @default("owner") // owner | member
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sessions    Session[]
+  generations Generation[]
+
+  @@index([orgId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Generation {
+  id          String   @id @default(cuid())
+  orgId       String
+  userId      String
+  status      String   @default("pending") // pending | succeeded | failed
+  provider    String
+  model       String?
+  regionId    String
+  moodId      String
+  aspectRatio String
+  seed        Int
+  costUsd     Float    @default(0)
+  width       Int?
+  height      Int?
+  sourceKey   String?
+  outputKey   String?
+  error       String?
+  createdAt   DateTime @default(now())
+
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([userId])
+  @@index([orgId, createdAt])
+}

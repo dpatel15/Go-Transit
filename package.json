@@ -5,8 +5,9 @@
   "description": "Premium AI photoshoots for Indian wedding cards (kankotri). Upload a plain photo, get an editorial-quality product shot. Multi-tenant SaaS.",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
+    "postinstall": "prisma generate",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
