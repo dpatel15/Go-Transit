@@ -49,6 +49,20 @@ function redact(text: string, secret: string): string {
   return text.split(secret).join("***");
 }
 
+/** Map an HTTP status to a safe, actionable hint (no raw upstream body). */
+function friendlyStatus(status: number): string {
+  if (status === 400) return `the request was rejected (400) — the model may not accept this input`;
+  if (status === 401 || status === 403) {
+    return `the API key was rejected or lacks access to image generation (${status}) — check the key, and that the Generative Language API and billing are enabled for its project`;
+  }
+  if (status === 404) return `the image model was not found (404) — check the GEMINI_IMAGE_MODEL setting`;
+  if (status === 429) {
+    return `the image quota / rate limit was hit (429) — a brand-new key often has no image-generation quota until billing is enabled; enable billing or wait and retry`;
+  }
+  if (status >= 500) return `the image service had a temporary error (${status}) — please retry in a moment`;
+  return `the image service returned an error (${status})`;
+}
+
 /**
  * GeminiProvider — real generation via Gemini 2.5 Flash Image ("Nano Banana").
  *
@@ -80,16 +94,22 @@ export class GeminiProvider implements ImageProvider {
       ? `${params.prompt}\n\nAvoid the following: ${params.negativePrompt}.`
       : params.prompt;
 
+    const parts: Array<Record<string, unknown>> = [
+      { text: promptText },
+      { inlineData: { mimeType: params.image.mimeType, data: params.image.data.toString("base64") } },
+    ];
+    const references = params.references ?? [];
+    if (references.length > 0) {
+      parts.push({
+        text: "The following image(s) are STYLE REFERENCE only — echo their mood, palette and lighting, but never copy their subject, text or logos:",
+      });
+      for (const ref of references) {
+        parts.push({ inlineData: { mimeType: ref.mimeType, data: ref.data.toString("base64") } });
+      }
+    }
+
     const body = {
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: promptText },
-            { inlineData: { mimeType: params.image.mimeType, data: params.image.data.toString("base64") } },
-          ],
-        },
-      ],
+      contents: [{ role: "user", parts }],
       generationConfig: {
         responseModalities: ["IMAGE"],
         ...(params.seed !== undefined ? { seed: params.seed } : {}),
@@ -111,8 +131,11 @@ export class GeminiProvider implements ImageProvider {
     }
 
     if (!res.ok) {
+      // Log the full (redacted) detail server-side for debugging…
       const detail = redact(await safeText(res), this.apiKey);
-      throw new Error(`Gemini API error ${res.status}: ${detail.slice(0, 400)}`);
+      console.error(`Gemini API error ${res.status}:`, detail.slice(0, 800));
+      // …but only surface a safe, actionable hint (no raw upstream body).
+      throw new Error(`Gemini image generation failed: ${friendlyStatus(res.status)}.`);
     }
 
     const json = (await res.json()) as GeminiResponse;

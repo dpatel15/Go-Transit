@@ -3,7 +3,7 @@ import { env } from "@/lib/env";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getPipeline, generateRateLimiter } from "@/lib/server/services";
 import { getClientIp } from "@/lib/http/ip";
-import { DEFAULT_UPLOAD_LIMITS, validateAndNormalizeUpload } from "@/lib/security/upload";
+import { DEFAULT_UPLOAD_LIMITS, validateAndNormalizeUpload, type ValidatedImage } from "@/lib/security/upload";
 import { isAspectRatioId, isMoodId, isRegionId } from "@/lib/prompt";
 import { PipelineError } from "@/lib/generation/pipeline";
 
@@ -68,11 +68,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: validation.error }, { status: 400 });
   }
 
+  // Optional style-reference images — validated & re-encoded like the product.
+  const MAX_REFERENCES = 3;
+  const referenceFiles = form
+    .getAll("reference")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+  if (referenceFiles.length > MAX_REFERENCES) {
+    return NextResponse.json({ error: `Please attach at most ${MAX_REFERENCES} reference images.` }, { status: 400 });
+  }
+  const references: ValidatedImage[] = [];
+  for (const ref of referenceFiles) {
+    if (ref.size > maxBytes) {
+      return NextResponse.json({ error: `A reference image is too large (max ${env.MAX_UPLOAD_MB} MB).` }, { status: 413 });
+    }
+    const refBytes = Buffer.from(await ref.arrayBuffer());
+    const refValidation = await validateAndNormalizeUpload(refBytes, { ...DEFAULT_UPLOAD_LIMITS, maxBytes });
+    if (!refValidation.ok) {
+      return NextResponse.json({ error: `Reference image: ${refValidation.error}` }, { status: 400 });
+    }
+    references.push(refValidation.image);
+  }
+
   try {
     const outcome = await getPipeline().generate({
       orgId: session.org.id,
       userId: session.user.id,
       image: validation.image,
+      references,
       region,
       mood,
       aspectRatio,
@@ -100,12 +122,10 @@ export async function POST(req: Request) {
         // Quota messages are safe, user-facing text (spend cap / out of credits).
         return NextResponse.json({ error: err.message, code: err.code }, { status: 402 });
       }
-      // Provider/internal detail is logged server-side, never returned verbatim.
+      // The provider yields safe, key-redacted messages; surface a trimmed
+      // version so setup issues (billing/quota/model/storage) are diagnosable.
       console.error("generation pipeline error:", err.code, err.message);
-      return NextResponse.json(
-        { error: "Generation failed. Please try again in a moment.", code: err.code },
-        { status: 502 },
-      );
+      return NextResponse.json({ error: err.message.slice(0, 300), code: err.code }, { status: 502 });
     }
     console.error("generation failed:", err);
     return NextResponse.json({ error: "Generation failed unexpectedly. Please try again." }, { status: 500 });

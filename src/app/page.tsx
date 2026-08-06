@@ -12,7 +12,7 @@ const FEATURES = [
   { title: "Region-aware", body: "Florals, fabrics and palettes tuned to Gujarati, Punjabi, South Indian and more." },
   { title: "Your card, untouched", body: "The design and text stay exactly as printed — only the scene around it is created." },
   { title: "Spend-safe", body: "A hard cost cap and per-studio credits keep AI spend fully under control." },
-  { title: "Instagram-ready", body: "Exports in 4:5, 1:1 and 9:16 for feed posts, the grid and Stories/Reels." },
+  { title: "Instagram-ready", body: "Exports in 4:5, 1:1 and 9:16 for feed posts, the grid and Stories or Reels." },
 ];
 
 export default function Home() {
@@ -20,20 +20,19 @@ export default function Home() {
     <>
       <SiteHeader />
 
-      {/* Hero */}
       <main>
-        <section className="container-page grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-24">
+        {/* Hero */}
+        <section className="container-page grid items-center gap-10 py-16 sm:py-20 lg:grid-cols-2 lg:gap-14">
           <div>
-            <p className="label text-gold">For wedding-card studios</p>
-            <h1 className="mt-5 font-display text-4xl leading-[1.05] text-ink sm:text-5xl lg:text-6xl">
-              A premium photoshoot for every kankotri —
-              <span className="text-maroon"> from one phone photo.</span>
+            <p className="label text-maroon">For wedding-card studios</p>
+            <h1 className="mt-5 font-display text-4xl font-semibold leading-[1.08] tracking-tight text-ink sm:text-5xl">
+              A premium photoshoot for every kankotri, from one phone photo.
             </h1>
-            <p className="mt-6 max-w-lg text-lg text-muted">
-              Upload a card on a plain table and get an editorial-quality product shot, matched to your region
-              and style, ready for Instagram in seconds.
+            <p className="mt-5 max-w-md text-lg text-muted">
+              Upload a card on a plain table and get an editorial-quality product shot, matched to your region and
+              style, ready for Instagram in seconds.
             </p>
-            <div className="mt-9 flex flex-wrap items-center gap-4">
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/signup" className="btn-primary">
                 Start free
               </Link>
@@ -44,39 +43,37 @@ export default function Home() {
             <p className="mt-4 text-xs text-muted">Free preview mode — no API key needed to try it.</p>
           </div>
 
-          {/* Decorative "after" panel */}
-          <div className="relative mx-auto w-full max-w-md">
-            <div className="aspect-[4/5] rounded-xl2 bg-gradient-to-br from-cream via-sand/70 to-gold/30 p-8 shadow-premium">
-              <div className="flex h-full items-center justify-center">
-                <div className="relative aspect-[3/4] w-2/3 rounded-lg bg-ivory shadow-card ring-1 ring-ink/10">
-                  <div className="absolute inset-x-6 top-8 space-y-2">
-                    <div className="mx-auto h-2 w-16 rounded-full bg-gold/70" />
-                    <div className="mx-auto h-1.5 w-24 rounded-full bg-ink/15" />
-                    <div className="mx-auto h-1.5 w-20 rounded-full bg-ink/10" />
-                  </div>
-                  <div className="absolute inset-x-6 bottom-8 space-y-1.5">
-                    <div className="mx-auto h-1.5 w-20 rounded-full bg-ink/10" />
-                    <div className="mx-auto h-1.5 w-14 rounded-full bg-maroon/40" />
+          {/* Flat sample — no gradient, no glow */}
+          <div className="mx-auto w-full max-w-sm sm:max-w-md lg:mx-0 lg:ml-auto">
+            <div className="card-surface p-5 sm:p-7">
+              <div className="flex aspect-[4/5] items-center justify-center rounded-lg bg-cream">
+                <div className="aspect-[3/4] w-3/5 rounded-md border border-ink/10 bg-white">
+                  <div className="flex h-full flex-col items-center justify-between px-4 py-6">
+                    <span className="h-1.5 w-12 rounded-full bg-maroon/30" />
+                    <div className="w-full space-y-2">
+                      <span className="mx-auto block h-1.5 w-3/4 rounded-full bg-ink/15" />
+                      <span className="mx-auto block h-1.5 w-2/3 rounded-full bg-ink/10" />
+                    </div>
+                    <span className="h-1.5 w-14 rounded-full bg-maroon/20" />
                   </div>
                 </div>
               </div>
+              <p className="mt-4 text-center text-xs text-muted">A phone photo, restyled into a premium shot.</p>
             </div>
-            <div className="absolute -left-4 -top-4 h-16 w-16 rounded-full bg-gold/40 blur-xl" />
-            <div className="absolute -bottom-5 right-6 h-20 w-20 rounded-full bg-maroon/25 blur-xl" />
           </div>
         </section>
 
         {/* How it works */}
-        <section id="how" className="border-y border-ink/10 bg-white/50">
+        <section id="how" className="border-t border-ink/10">
           <div className="container-page py-16">
-            <h2 className="text-center font-display text-3xl text-ink">Three steps to a premium post</h2>
-            <div className="mt-10 grid gap-8 md:grid-cols-3">
+            <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Three steps to a premium post</h2>
+            <div className="mt-10 grid gap-6 sm:grid-cols-3">
               {STEPS.map((s) => (
-                <div key={s.n} className="text-center">
-                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-maroon font-display text-lg text-ivory">
+                <div key={s.n} className="card-surface p-6">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-maroon/25 font-display text-base text-maroon">
                     {s.n}
                   </div>
-                  <h3 className="mt-4 font-display text-xl text-ink">{s.title}</h3>
+                  <h3 className="mt-4 font-display text-lg font-semibold text-ink">{s.title}</h3>
                   <p className="mt-2 text-sm text-muted">{s.body}</p>
                 </div>
               ))}
@@ -85,48 +82,58 @@ export default function Home() {
         </section>
 
         {/* Features */}
-        <section className="container-page py-16">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="card-surface p-6">
-                <h3 className="font-display text-lg text-ink">{f.title}</h3>
-                <p className="mt-2 text-sm text-muted">{f.body}</p>
-              </div>
-            ))}
+        <section className="border-t border-ink/10">
+          <div className="container-page py-16">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {FEATURES.map((f) => (
+                <div key={f.title} className="card-surface p-6">
+                  <h3 className="font-display text-lg font-semibold text-ink">{f.title}</h3>
+                  <p className="mt-2 text-sm text-muted">{f.body}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Regions */}
-        <section className="container-page pb-8">
-          <h2 className="text-center font-display text-2xl text-ink">Built for India&rsquo;s wedding styles</h2>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            {REGIONS.map((r) => (
-              <span
-                key={r.id}
-                className="rounded-full border border-ink/15 bg-white/70 px-4 py-1.5 text-sm text-ink/80"
-              >
-                {r.label}
-              </span>
-            ))}
+        <section className="border-t border-ink/10">
+          <div className="container-page py-14">
+            <h2 className="text-center font-display text-xl font-semibold text-ink sm:text-2xl">
+              Built for India&rsquo;s wedding styles
+            </h2>
+            <div className="mt-6 flex flex-wrap justify-center gap-2.5">
+              {REGIONS.map((r) => (
+                <span
+                  key={r.id}
+                  className="rounded-full border border-ink/15 px-4 py-1.5 text-sm text-ink/80"
+                >
+                  {r.label}
+                </span>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* CTA */}
-        <section className="container-page py-16">
-          <div className="rounded-xl2 bg-maroon px-8 py-14 text-center text-ivory shadow-premium">
-            <h2 className="font-display text-3xl">Turn this season&rsquo;s cards into scroll-stopping posts.</h2>
-            <p className="mx-auto mt-3 max-w-xl text-ivory/80">
-              Create your studio in a minute and start with free preview generations today.
-            </p>
-            <Link href="/signup" className="btn-gold mt-8">
-              Get started
-            </Link>
+        <section className="border-t border-ink/10">
+          <div className="container-page py-16">
+            <div className="rounded-2xl bg-maroon px-6 py-12 text-center text-ivory sm:px-10 sm:py-14">
+              <h2 className="mx-auto max-w-2xl font-display text-2xl font-semibold sm:text-3xl">
+                Turn this season&rsquo;s cards into scroll-stopping posts.
+              </h2>
+              <p className="mx-auto mt-3 max-w-xl text-ivory/80">
+                Create your studio in a minute and start with free preview generations today.
+              </p>
+              <Link href="/signup" className="btn-onaccent mt-8">
+                Get started
+              </Link>
+            </div>
           </div>
         </section>
       </main>
 
       <footer className="border-t border-ink/10">
-        <div className="container-page flex flex-col items-center justify-between gap-3 py-8 text-sm text-muted sm:flex-row">
+        <div className="container-page flex flex-col items-center justify-between gap-2 py-8 text-sm text-muted sm:flex-row">
           <span className="font-display text-ink">Kankotri Studio</span>
           <span>Premium AI photoshoots for Indian wedding cards.</span>
         </div>

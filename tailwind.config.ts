@@ -12,21 +12,25 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ivory: "#FBF8F1",
-        cream: "#F3EAD9",
-        sand: "#E4D6BC",
+        // Light, cool, "standard" palette. Token names are kept stable so the
+        // whole app re-colours from this one place; the accent (historically
+        // named "maroon") is now a clean, friendly blue.
+        ivory: "#F8FAFC", // page ground — cool near-white (slate-50)
+        cream: "#F1F5F9", // subtle surfaces / placeholders (slate-100)
+        sand: "#E2E8F0", // hairline fills (slate-200)
         gold: {
-          DEFAULT: "#B8912F", // antique, muted — not neon
-          light: "#D9B65A",
-          dark: "#8A6C1F",
+          DEFAULT: "#2563EB",
+          light: "#3B82F6",
+          dark: "#1D4ED8",
         },
         maroon: {
-          DEFAULT: "#6E1E2A",
-          dark: "#4A121B",
-          light: "#8F3341",
+          // accent — blue
+          DEFAULT: "#2563EB", // blue-600
+          dark: "#1D4ED8", // blue-700 (hover / pressed)
+          light: "#3B82F6", // blue-500
         },
-        ink: "#211B16",
-        muted: "#6B6157",
+        ink: "#0F172A", // slate-900 — headings & primary text
+        muted: "#64748B", // slate-500 — secondary text
       },
       fontFamily: {
         // Elegant serif for display; system serif fallback keeps builds offline-safe.

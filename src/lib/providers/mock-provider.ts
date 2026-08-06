@@ -13,11 +13,11 @@ import type { GenerateImageParams, GeneratedImage, ImageProvider } from "./types
  */
 
 const PALETTES: ReadonlyArray<readonly [string, string]> = [
-  ["#f3e2c7", "#c98b5a"],
-  ["#f6ead6", "#a8722f"],
-  ["#efd9c3", "#8f3341"],
-  ["#e9e3d6", "#6e1e2a"],
-  ["#f4ecd9", "#3f5a4a"],
+  ["#eef2f7", "#9fb3c8"],
+  ["#eaf1fb", "#8fb0e0"],
+  ["#f1f5f9", "#7e8ca0"],
+  ["#eef2f7", "#8896ad"],
+  ["#f3f5f8", "#9aa7b8"],
 ];
 
 function xmlEscape(s: string): string {

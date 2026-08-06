@@ -72,6 +72,39 @@ describe("GeminiProvider", () => {
     expect(sent.generationConfig.responseModalities).toEqual(["IMAGE"]);
   });
 
+  it("appends style-reference images as extra parts, after the product", async () => {
+    const imgB64 = await tinyImageBase64();
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    const fetchImpl = (async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      return fakeResponse({
+        candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: imgB64 } }] } }],
+      });
+    }) as unknown as typeof fetch;
+
+    const provider = new GeminiProvider({ apiKey: "k", fetchImpl });
+    const card = await jpegCard();
+    const ref = await sharp({
+      create: { width: 24, height: 24, channels: 3, background: { r: 9, g: 9, b: 9 } },
+    })
+      .png()
+      .toBuffer();
+
+    await provider.generate({
+      image: { data: card, mimeType: "image/jpeg" },
+      references: [{ data: ref, mimeType: "image/png" }],
+      prompt: "P",
+      target: { width: 100, height: 100 },
+    });
+
+    const parts = JSON.parse(calls[0]!.init.body as string).contents[0].parts;
+    // prompt text, product image, reference-label text, reference image
+    expect(parts).toHaveLength(4);
+    expect(parts[1].inlineData.data).toBe(card.toString("base64"));
+    expect(parts[2].text).toMatch(/STYLE REFERENCE only/i);
+    expect(parts[3].inlineData.data).toBe(ref.toString("base64"));
+  });
+
   it("throws a redacted error on API failure (never leaks the key)", async () => {
     const fetchImpl = (async () =>
       fakeResponse({ error: "invalid key SUPER_SECRET provided" }, false, 400)) as unknown as typeof fetch;
@@ -90,9 +123,22 @@ describe("GeminiProvider", () => {
       });
       throw new Error("should have thrown");
     } catch (e) {
-      expect((e as Error).message).not.toContain("SUPER_SECRET");
-      expect((e as Error).message).toContain("***");
+      const message = (e as Error).message;
+      // The safe hint carries the status but never the key or raw upstream body.
+      expect(message).not.toContain("SUPER_SECRET");
+      expect(message).not.toContain("invalid key");
+      expect(message).toContain("400");
     }
+  });
+
+  it("gives an actionable hint for a 429 quota error", async () => {
+    const fetchImpl = (async () =>
+      fakeResponse({ error: "quota exceeded" }, false, 429)) as unknown as typeof fetch;
+    const provider = new GeminiProvider({ apiKey: "k", fetchImpl });
+    const card = await jpegCard();
+    await expect(
+      provider.generate({ image: { data: card, mimeType: "image/jpeg" }, prompt: "x", target: { width: 100, height: 100 } }),
+    ).rejects.toThrow(/429|billing|quota/i);
   });
 
   it("throws when the response has no image part", async () => {

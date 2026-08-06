@@ -61,6 +61,7 @@ export function StudioClient({
   const [result, setResult] = useState<GenResult | null>(null);
   const [credits, setCredits] = useState(remainingCredits);
   const [gallery, setGallery] = useState<GalleryItem[]>(initialGallery);
+  const [references, setReferences] = useState<Array<{ file: File; url: string }>>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onPickFile = (f: File | null) => {
@@ -72,6 +73,19 @@ export function StudioClient({
     setResult(null);
     setError(null);
     setSeed(null);
+  };
+
+  const addReference = (f: File | null) => {
+    if (!f) return;
+    setReferences((prev) => (prev.length >= 3 ? prev : [...prev, { file: f, url: URL.createObjectURL(f) }]));
+  };
+
+  const removeReference = (idx: number) => {
+    setReferences((prev) => {
+      const target = prev[idx];
+      if (target) URL.revokeObjectURL(target.url);
+      return prev.filter((_, i) => i !== idx);
+    });
   };
 
   const generate = useCallback(
@@ -88,6 +102,7 @@ export function StudioClient({
       fd.set("mood", mood);
       fd.set("aspectRatio", aspectRatio);
       if (notes.trim()) fd.set("notes", notes.trim());
+      references.forEach((r) => fd.append("reference", r.file));
       const useSeed = newLook ? Math.floor(Math.random() * 1_000_000_000) : seed;
       if (useSeed !== null && useSeed !== undefined) fd.set("seed", String(useSeed));
 
@@ -118,7 +133,7 @@ export function StudioClient({
         setWorking(false);
       }
     },
-    [file, region, mood, aspectRatio, notes, seed],
+    [file, region, mood, aspectRatio, notes, seed, references],
   );
 
   const regionInfo = getRegion(region);
@@ -129,16 +144,16 @@ export function StudioClient({
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl text-ink">Create a post</h1>
+          <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Create a post</h1>
           <p className="mt-1 text-sm text-muted">Upload a card photo, choose a look, and generate.</p>
         </div>
-        <span className="rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-sm text-gold-dark">
+        <span className="rounded-full border border-maroon/25 bg-maroon/[0.06] px-4 py-1.5 text-sm text-maroon">
           {credits} credit{credits === 1 ? "" : "s"} left this month
         </span>
       </div>
 
       {previewMode && (
-        <div className="rounded-xl border border-gold/30 bg-cream/60 px-4 py-3 text-sm text-ink/80">
+        <div className="rounded-xl border border-ink/10 bg-cream px-4 py-3 text-sm text-ink/80">
           <strong className="font-medium">Preview mode.</strong> You&rsquo;re seeing free mock composites. Add a
           Gemini API key (see the README) to switch on photoreal output — your $10 spend cap stays enforced.
         </div>
@@ -150,7 +165,7 @@ export function StudioClient({
           <div>
             <span className="label">1 · Card photo</span>
             <label
-              className="mt-2 flex aspect-[4/3] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-ink/25 bg-white/60 text-center transition hover:border-gold"
+              className="mt-2 flex aspect-[4/3] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-ink/25 bg-cream text-center transition-colors hover:border-maroon/40"
               htmlFor="card-input"
             >
               {previewUrl ? (
@@ -237,6 +252,43 @@ export function StudioClient({
           </div>
 
           <div>
+            <span className="label">Style references (optional)</span>
+            <p className="mt-1 text-xs text-muted">
+              Add up to 3 photos whose look you want — a background, a mood, a shoot you like. We match the vibe
+              and keep your product exact. Use images you have the rights to.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {references.map((r, i) => (
+                <div key={i} className="relative h-16 w-16 overflow-hidden rounded-lg border border-ink/15">
+                  <img src={r.url} alt={`Reference ${i + 1}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeReference(i)}
+                    aria-label="Remove reference"
+                    className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink/70 text-xs leading-none text-ivory"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {references.length < 3 && (
+                <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-ink/25 bg-cream text-lg text-muted transition-colors hover:border-maroon/40">
+                  +
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={(e) => {
+                      addReference(e.target.files?.[0] ?? null);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+
+          <div>
             <label className="label" htmlFor="notes">
               Extra note (optional)
             </label>
@@ -258,7 +310,7 @@ export function StudioClient({
 
           <button
             type="button"
-            className="btn-primary w-full"
+            className="btn-primary w-full py-3 text-base"
             disabled={working || !file}
             onClick={() => generate(false)}
           >
@@ -269,14 +321,23 @@ export function StudioClient({
         {/* Result */}
         <div className="card-surface flex flex-col p-6">
           <span className="label">Result</span>
-          <div className="mt-2 flex flex-1 items-center justify-center rounded-xl bg-gradient-to-br from-cream to-sand/50 p-4">
+          <div className="mt-2 flex flex-1 items-center justify-center rounded-xl border border-ink/10 bg-cream p-4">
             {working ? (
-              <div className="animate-pulse text-sm text-muted">Styling the scene…</div>
+              <div className="flex flex-col items-center gap-3 text-center">
+                <span
+                  className="h-8 w-8 animate-spin rounded-full border-2 border-ink/15 border-t-maroon"
+                  aria-hidden="true"
+                />
+                <p className="text-sm text-muted">
+                  Creating your photoshoot…
+                  <span className="mt-1 block text-xs text-muted/80">this usually takes a few seconds</span>
+                </p>
+              </div>
             ) : result ? (
               <img
                 src={result.outputUrl}
                 alt="Generated premium card photo"
-                className="max-h-[520px] w-auto rounded-lg shadow-premium"
+                className="max-h-[520px] w-auto max-w-full rounded-lg border border-ink/10"
               />
             ) : (
               <div className="max-w-xs text-center text-sm text-muted">
@@ -294,7 +355,7 @@ export function StudioClient({
                 <span>· seed {result.seed}</span>
               </div>
               <div className="flex flex-wrap gap-3">
-                <a href={result.downloadUrl} className="btn-gold flex-1 text-center">
+                <a href={result.downloadUrl} className="btn-primary flex-1 text-center">
                   Download
                 </a>
                 <button type="button" className="btn-outline flex-1" disabled={working} onClick={() => generate(true)}>
@@ -308,13 +369,13 @@ export function StudioClient({
 
       {gallery.length > 0 && (
         <div>
-          <h2 className="font-display text-2xl text-ink">Your recent posts</h2>
+          <h2 className="font-display text-2xl font-semibold text-ink">Your recent posts</h2>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {gallery.map((g) => (
               <a
                 key={g.id}
                 href={g.download}
-                className="group relative overflow-hidden rounded-xl border border-ink/10 bg-white/60"
+                className="group relative overflow-hidden rounded-xl border border-ink/10 bg-cream"
                 title="Download"
               >
                 <img
