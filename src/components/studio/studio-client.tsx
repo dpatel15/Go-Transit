@@ -323,7 +323,16 @@ export function StudioClient({
           <span className="label">Result</span>
           <div className="mt-2 flex flex-1 items-center justify-center rounded-xl border border-ink/10 bg-cream p-4">
             {working ? (
-              <div className="animate-pulse text-sm text-muted">Styling the scene…</div>
+              <div className="flex flex-col items-center gap-3 text-center">
+                <span
+                  className="h-8 w-8 animate-spin rounded-full border-2 border-ink/15 border-t-maroon"
+                  aria-hidden="true"
+                />
+                <p className="text-sm text-muted">
+                  Creating your photoshoot…
+                  <span className="mt-1 block text-xs text-muted/80">this usually takes a few seconds</span>
+                </p>
+              </div>
             ) : result ? (
               <img
                 src={result.outputUrl}
