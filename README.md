@@ -195,7 +195,9 @@ The app is multi-tenant from day one:
 - [ ] **Video (Phase 2):** turn a still into a short reel via Veo / Seedance-style
       APIs (a `VideoProvider` interface mirroring the image one).
 - [ ] **Direct Instagram publishing** (Graph API) with per-region captions.
-- [ ] **Stripe billing** on the existing credits/plan model.
+- [x] **Stripe billing** on the credits/plan model — checkout, customer portal,
+      signature-verified webhooks, plans → monthly credits. See
+      [`docs/BILLING.md`](./docs/BILLING.md). Plus a gated **super-admin** at `/admin`.
 - [ ] **S3/R2 storage driver** for serverless/multi-node deploys.
 - [ ] **More regions & scene templates**, plus a "brand kit" per studio.
 

@@ -27,6 +27,12 @@ model Organization {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
+  // Stripe billing
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?
+  subscriptionStatus   String? // active | trialing | past_due | canceled | incomplete
+  currentPeriodEnd     DateTime?
+
   users       User[]
   generations Generation[]
 }
@@ -85,4 +91,11 @@ model Generation {
   @@index([orgId])
   @@index([userId])
   @@index([orgId, createdAt])
+}
+
+/// Stripe event ids we've already processed, for idempotent webhook handling.
+model ProcessedWebhook {
+  id        String   @id // Stripe event id (evt_...)
+  type      String
+  createdAt DateTime @default(now())
 }

@@ -1,12 +1,16 @@
 import "server-only";
 import { prisma } from "@/lib/db/client";
-import { env, imageProviderConfig } from "@/lib/env";
+import { env, imageProviderConfig, stripePriceForKey } from "@/lib/env";
 import { createAuthService } from "@/lib/auth/service";
 import { createImageProvider } from "@/lib/providers";
 import { createStorage } from "@/lib/storage";
 import { createGenerationStore, createOrgAccounting } from "@/lib/generation/store";
 import { createGenerationPipeline } from "@/lib/generation/pipeline";
 import { RateLimiter } from "@/lib/security/rate-limit";
+import { createStripeGateway } from "@/lib/billing/stripe/gateway";
+import { createBillingService } from "@/lib/billing/billing-service";
+import { buildPriceToPlan } from "@/lib/billing/plans";
+import { createAdminService } from "@/lib/admin/admin-service";
 
 /**
  * App-wide singletons wired from validated env. Route handlers, server actions
@@ -44,3 +48,14 @@ export function getPipeline() {
 const windowMs = env.RATE_LIMIT_WINDOW_SECONDS * 1000;
 export const authRateLimiter = new RateLimiter({ windowMs, max: env.RATE_LIMIT_MAX_AUTH });
 export const generateRateLimiter = new RateLimiter({ windowMs, max: env.RATE_LIMIT_MAX_GENERATE });
+
+// ---- Billing ---------------------------------------------------------------
+export const stripeGateway = createStripeGateway({ secretKey: env.STRIPE_SECRET_KEY });
+export const billingService = createBillingService(prisma);
+
+/** Map of configured Stripe Price id -> Plan (empty until prices are set). */
+export function priceToPlanMap() {
+  return buildPriceToPlan(stripePriceForKey);
+}
+
+export const adminService = createAdminService(prisma);

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentSession } from "@/lib/auth/session";
+import { isSuperAdmin } from "@/lib/auth/admin";
 import { logoutAction } from "@/lib/auth/actions";
 import { Wordmark } from "./brand";
 
@@ -15,6 +16,14 @@ export async function SiteHeader() {
               <Link href="/studio" className="text-ink/80 transition hover:text-ink">
                 Studio
               </Link>
+              <Link href="/billing" className="text-ink/80 transition hover:text-ink">
+                Billing
+              </Link>
+              {isSuperAdmin(session.user.email) && (
+                <Link href="/admin" className="text-ink/80 transition hover:text-ink">
+                  Admin
+                </Link>
+              )}
               <form action={logoutAction}>
                 <button type="submit" className="btn-outline px-4 py-2">
                   Sign out
