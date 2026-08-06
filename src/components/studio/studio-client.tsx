@@ -310,7 +310,7 @@ export function StudioClient({
 
           <button
             type="button"
-            className="btn-primary w-full"
+            className="btn-primary w-full py-3 text-base"
             disabled={working || !file}
             onClick={() => generate(false)}
           >
